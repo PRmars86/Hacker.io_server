@@ -1,13 +1,23 @@
 const express = require('express');
+const morgan = require('morgan');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
 const app = express();
 
-app.get('/api/register', (req, res) => {
-    res.json({
-        data: 'you hit register endpoint!!'
-    })
-});
+// import routes
+const authRoutes = require('./routes/auth');
 
-const port = process.env.port || 8000;
+//app middlewares
+app.use(morgan('dev'));
+app.use(bodyParser.json());
+app.use(cors());
+
+// middlewares
+app.use('/api', authRoutes);
+
+const port = process.env.PORT;
 
 app.listen(port, () => console.log(`API is running on port ${port}`));
