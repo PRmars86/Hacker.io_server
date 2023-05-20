@@ -7,13 +7,18 @@ require('dotenv').config();
 
 const app = express();
 
+//DB
+mongoose.connect(process.env.DATABASE_CLOUD, {})
+    .then(() => console.log('DB connected'))
+    .catch((err) => console.log("DB error =>", err));
+
 // import routes
 const authRoutes = require('./routes/auth');
 
 //app middlewares
 app.use(morgan('dev'));
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL }));
 
 // middlewares
 app.use('/api', authRoutes);
