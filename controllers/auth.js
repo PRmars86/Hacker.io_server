@@ -1,7 +1,7 @@
 const User = require('../models/user');
 const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
-
+const { registerEmailParams } = require('../helpers/email')
 
 AWS.config.credentials = new AWS.SharedIniFileCredentials({ profile: 'default' });
 AWS.config.update({
@@ -30,42 +30,22 @@ exports.register = (req, res) => {
         });
 
         // send email
-        const params = {
-            Source: process.env.EMAIL_FROM,
-            Destination: {
-                ToAddresses: [email]
-            },
-            ReplyToAddresses: [process.env.EMAIL_TO],
-            Message: {
-                Body: {
-                    Html: {
-                        Charset: 'UTF-8',
-                        Data: `
-                        <html>
-                            <h1>Vefiry your email address</h1>
-                            <p>Please use the following link to complete your registration:</p>
-                            <p>${process.env.CLIENT_URL}/auth/activate/${token}</p>
-                        </html>
-                    `
-                    }
-                },
-                Subject: {
-                    Charset: 'UTF-8',
-                    Data: 'Complete your registration'
-                }
-            }
-        };
+        const params = registerEmailParams(email, token);
 
         const sendEmailOnRegister = ses.sendEmail(params).promise();
 
         sendEmailOnRegister
             .then(data => {
                 console.log('email submitted to SES', data);
-                res.send('Email sent');
+                res.json({
+                    message: `Email has been sent to ${email}, follow the instructions to complete your registration`
+                })
             })
             .catch(error => {
                 console.log('ses email on register', error);
-                res.send('email failed');
+                res.json({
+                    message: `We could not verify your email, please try again`
+                })
             });
     });
 };
