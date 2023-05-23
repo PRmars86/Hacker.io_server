@@ -1,7 +1,9 @@
 const User = require('../models/user');
 const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
-const { registerEmailParams } = require('../helpers/email')
+const { registerEmailParams } = require('../helpers/email');
+const shortid = require('shortid');
+
 
 AWS.config.credentials = new AWS.SharedIniFileCredentials({ profile: 'default' });
 AWS.config.update({
@@ -49,3 +51,41 @@ exports.register = (req, res) => {
             });
     });
 };
+
+exports.registerActivate = (req, res) => {
+    const { token } = req.body;
+    //console.log(token);
+
+    jwt.verify(token, process.env.JWT_ACCOUNT_ACTIVATION, function (err, decoded) {
+        if (err) {
+            return res.status(401).json({
+                error: 'Expired link. Try again'
+            })
+        }
+
+        const { name, email, password } = jwt.decode(token);
+        const username = shortid.generate();
+
+        User.findOne({ email }).exec((err, user) => {
+            if (user) {
+                return res.status(401).json({
+                    error: 'Email is taken'
+                })
+            }
+
+            //create new user
+            const newUser = new User({ username, name, email, password });
+            newUser.save((err, result) => {
+                if (err) {
+                    return res.status(401).json({
+                        error: 'Error saving user in database, Try later'
+                    })
+                }
+                return res.json({
+                    message: 'Registration success. Please login'
+                })
+            })
+        })
+
+    });
+}
