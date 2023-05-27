@@ -14,6 +14,7 @@ mongoose.connect(process.env.DATABASE_CLOUD, { useNewUrlParser: true, useUnified
 
 // import routes
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
 //app middlewares
 app.use(morgan('dev'));
@@ -22,6 +23,7 @@ app.use(cors({ origin: process.env.CLIENT_URL }));
 
 // middlewares
 app.use('/api', authRoutes);
+app.use('/api', userRoutes);
 
 const port = process.env.PORT;
 
