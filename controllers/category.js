@@ -12,79 +12,49 @@ const s3 = new AWS.S3({
 });
 
 exports.create = (req, res) => {
-    let form = new formidable.IncomingForm();
-    form.parse(req, (err, fields, files) => {
+
+    const { name, image, content } = req.body;
+    console.log({ name, image, content });
+    // image data
+    const base64Data = new Buffer.from(image.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+    const type = image.split(';')[0].split('/')[1];
+
+    const slug = slugify(name);
+    let category = new Category({ name, content, slug });
+
+    const params = {
+        Bucket: 'hackerio-img',
+        Key: `category/${uuidv4()}.${type}`,
+        Body: base64Data,
+        ACL: 'public-read',
+        ContentEncoding: 'base64',
+        ContentType: `image/${type}`
+    };
+
+    s3.upload(params, (err, data) => {
         if (err) {
-            return res.status(400).json({
-                error: "Image could not upload"
-            })
+            console.log(err);
+            res.status(400).json({ error: 'Upload to s3 failed' });
         }
-        const { name, content } = fields;
-        const { image } = files;
-        //console.table(image);
+        //console.log('AWS UPLOAD RES DATA', data);
+        category.image.url = data.Location;
+        category.image.key = data.Key;
+        // posted by
+        category.postedBy = req.user._id;
 
-        const slug = slugify(name);
-        let category = new Category({ name, content, slug });
-        if (image.size > 2000000) {
-            return res.status(400).json({
-                error: "Image should be less than 2mb"
-            })
-        }
-        console.log('create', image.filepath);
-        const params = {
-            Bucket: 'hackerio-img',
-            Key: `category/${uuidv4()}`,
-            Body: fs.readFileSync(image.filepath),
-            ACL: 'public-read',
-            ContentType: 'image/jpg'
-        };
-
-        s3.upload(params, (err, data) => {
+        // save to db
+        category.save((err, success) => {
             if (err) {
                 console.log(err);
-                res.status(400).json({ error: 'Upload to s3 failed' });
+                res.status(400).json({ error: 'Duplicate category' });
             }
-            console.log('AWS UPLOAD RES DATA', data);
-            category.image.url = data.Location;
-            category.image.key = data.Key;
-            // posted by
-            category.postedBy = req.user._id;
-
-            // save to db
-            category.save((err, success) => {
-                if (err) {
-                    console.log(err);
-                    res.status(400).json({ error: 'Duplicate category' });
-                }
-                return res.json(success);
-            });
+            return res.json(success);
         });
+    });
 
-    })
 
 };
 
-// exports.create = (req, res) => {
-//     const { name, content } = req.body;
-//     const slug = slugify(name);
-//     const image = {
-//         url: `https://via.placeholder.com/200x150.png?text=${process.env.CLIENT_URL}`,
-//         key: '123'
-//     };
-
-//     const category = new Category({ name, slug, image });
-//     category.postedBy = req.user._id;
-
-//     category.save((err, data) => {
-//         if (err) {
-//             console.log('CATEGORY CREATE ERR', err);
-//             return res.status(400).json({
-//                 error: 'Category create failed'
-//             });
-//         }
-//         res.json(data);
-//     });
-// };
 
 exports.list = (req, res) => {
     Category.find({}).exec((err, data) => {
