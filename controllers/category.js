@@ -12,7 +12,7 @@ const s3 = new AWS.S3({
 exports.create = (req, res) => {
 
     const { name, image, content } = req.body;
-    console.log({ name, image, content });
+    //console.log({ name, image, content });
     // image data
     const base64Data = new Buffer.from(image.replace(/^data:image\/\w+;base64,/, ''), 'base64');
     const type = image.split(';')[0].split('/')[1];
