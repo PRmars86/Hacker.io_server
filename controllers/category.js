@@ -1,8 +1,6 @@
 const Category = require('../models/category');
 const slugify = require('slugify');
-const formidable = require('formidable');
 const AWS = require('aws-sdk');
-const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 const s3 = new AWS.S3({
